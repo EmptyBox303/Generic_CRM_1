@@ -1,7 +1,10 @@
 from flask import Flask
+import sqlite3 as sql
 app = Flask(__name__)
 @app.route("/")
 def CRM():
+    sqlconn = sql.connect('sql.db')
+    cursor = sqlconn.cursor()
     return "<p>Hello, World!</p>"
     #display list of organizations
     #each has a button to delete
