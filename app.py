@@ -1,11 +1,19 @@
-from flask import Flask
+from flask import Flask,current_app,g
 import sqlite3 as sql
 app = Flask(__name__)
 @app.route("/")
 def CRM():
-    sqlconn = sql.connect('sql.db')
-    cursor = sqlconn.cursor()
+    #setup sql connection
+    db = sql.connect('sql.db')
+    cursor = db.cursor()
+    with open('queries/org_setup.sql', 'r') as file:
+        org_table_setup = file.read()
+    cursor.execute(org_table_setup)
+    db.commit()
+    db.close()
+
     return "<p>Hello, World!</p>"
+    
     #display list of organizations
     #each has a button to delete
     #for each button:
