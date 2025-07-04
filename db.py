@@ -3,6 +3,10 @@ import sqlite3
 import click
 from flask import current_app, g
 
+@click.command('init-db')
+def init_db_C():
+    init_db()
+    click.echo('Initialized the database.')
 
 def get_db():
     if 'db' not in g:
@@ -26,7 +30,3 @@ def init_db():
     db.commit()
 
 
-@click.command()
-def init_db_C():
-    #init_db()
-    click.echo('Initialized the database.')
