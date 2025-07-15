@@ -1,19 +1,19 @@
 
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for
+    Blueprint, flash, Flask, g, redirect, render_template, request, session, url_for
 )
 import sqlite3 as sql
 app = Flask(__name__)
 @app.route("/")
 def CRM():
     #setup sql connection
-    db = sql.connect('sql.db')
+    """ db = sql.connect('sql.db')
     cursor = db.cursor()
     with open('queries/org_setup.sql', 'r') as file:
         org_table_setup = file.read()
     cursor.execute(org_table_setup)
     db.commit()
-    db.close()
+    db.close() """
 
     return "<p>Hello, World!</p>"
     
