@@ -17,6 +17,19 @@ def org_page_get():
 
     return render_template("index.html")
 
+
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
+
+def get_db():
+    db = getattr(g, '_database', None)
+    if db is None:
+        db = g._database = sql.connect("sql.db")
+    return db
+
 if __name__ == "__main__":
     app.run(debug=True)
     
