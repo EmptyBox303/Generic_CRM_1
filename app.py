@@ -4,8 +4,8 @@ from flask import (
 )
 import sqlite3 as sql
 app = Flask(__name__)
-@app.route("/")
-def CRM():
+@app.route("/", methods = ["GET"])
+def org_page_get():
     #setup sql connection
     """ db = sql.connect('sql.db')
     cursor = db.cursor()
@@ -15,7 +15,10 @@ def CRM():
     db.commit()
     db.close() """
 
-    return "<p>Hello, World!</p>"
+    return render_template("index.html")
+
+if __name__ == "__main__":
+    app.run(debug=True)
     
     #display list of organizations
     #each has a button to delete
