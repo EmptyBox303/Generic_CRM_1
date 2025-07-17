@@ -81,12 +81,8 @@ def contact_page(orgname):
     find_organization = (cur.execute(f"SELECT id FROM organization WHERE name = \"{orgname}\"")).fetchone()
     if (find_organization is None):
         return render_template("org_notfound.html",org_name = orgname)
-    #see if this is a valid orgname
-    #if it isn't, return an error page
-    #We're sorry
-    #the organization you're looking cannot be found. 
-    #link returns to homepage
-    return "Hello World"
+    
+    return f"Hello World {find_organization["id"]}"
 
 @app.teardown_appcontext
 def close_connection(exception):

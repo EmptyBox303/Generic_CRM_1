@@ -13,6 +13,9 @@
         <button name = "remove", value = "{{row['name']}}" >Remove</button> 
     </form>
     {%endfor%}
+    {%if orgs|length == 0%}
+        <i>There are currently no organizations.</i> <br>
+    {%endif%}
     <br>
     <form method = "post">
         <input type = "text" name = "neworgname" value="{{ request.form.neworgname }}">
