@@ -2,21 +2,79 @@
 from flask import (
     Blueprint, flash, Flask, g, redirect, render_template, request, session, url_for
 )
+from logging.config import dictConfig
 import sqlite3 as sql
+
+
 app = Flask(__name__)
-@app.route("/", methods = ["GET"])
-def org_page_get():
-    #setup sql connection
-    """ db = sql.connect('sql.db')
-    cursor = db.cursor()
-    with open('queries/org_setup.sql', 'r') as file:
-        org_table_setup = file.read()
-    cursor.execute(org_table_setup)
-    db.commit()
-    db.close() """
+app.config["SESSION_PERMANENT"] = False 
+app.config["SESSION_TYPE"] = "filesystem"
+app.config["SECRET_KEY"] = "2034tupgfbdsJI0--tqwhudbP9q5w[yyjokuui[lj[];m]/zxcb/dtkjokhlpn,;';N(J(})||KJKHU)"
 
-    return render_template("index.html")
+@app.route("/", methods = ['GET','POST'])
+def org_page():
+    db, cur = get_db()
+    warning = ""
+    show_confirmation = False
+    if (request.method == 'POST'):
+        neworgname = request.form.get("neworgname")
+        remove_org_name = request.form.get("remove")
+        removal_confirmation = request.form.get("confirm")
 
+        #CASE: confirming deletion of organization. Organization name is stored in session["remove"]
+        if removal_confirmation is not None:
+            assert session.get("remove") is not None
+            cur.execute(f"DELETE FROM organization WHERE name = \"{session.get("remove")}\"")
+            db.commit()
+
+        #CASE: creating new organization. 
+        elif remove_org_name is None:
+            assert neworgname is not None
+
+            #No trailing whitespace, no spaces in the name, all lowercased
+            neworgname = neworgname.rstrip().replace(' ', '_').lower()
+            org_name_overlap = (cur.execute( \
+                f"SELECT name FROM organization WHERE name = \"{neworgname}\"")).fetchall()
+            
+            #Invalid: Whitespace names
+            if (len(neworgname) == 0):
+                warning = "Please enter a non-whitespace name."
+
+            #Invalid: org name is already used
+            elif (len(org_name_overlap) != 0):
+                warning = "This organization name already exists; Please use a different name."
+            
+            #Valid: New organization added, name field is cleared
+            else:
+                cur.execute( \
+                    f"INSERT INTO organization(name) VALUES (\"{neworgname}\")")
+                db.commit()
+                request.form.neworgname = ""
+
+        #CASE: requesting deletion of an organization. 
+        else:
+            warning = f"Do you wish to remove \"{remove_org_name}\"? All associated contacts and contact info will be deleted."
+            session["remove"] = remove_org_name
+            show_confirmation = True
+        
+        
+    
+    get_orgs = (cur.execute("SELECT name FROM organization")).fetchall()
+
+    return render_template("index.html", orgs = get_orgs, warn = warning, show = show_confirmation)
+
+
+
+
+@app.route("/<orgname>", methods = ['GET','POST'])
+def contact_page(orgname):
+    session.clear()
+    #see if this is a valid orgname
+    #if it isn't, return an error page
+    #We're sorry
+    #the organization you're looking cannot be found. 
+    #link returns to homepage
+    pass
 
 @app.teardown_appcontext
 def close_connection(exception):
@@ -28,8 +86,11 @@ def get_db():
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = sql.connect("sql.db")
-    return db
+        db.row_factory = sql.Row
+        cur = db.cursor()
+    return db, cur
 
+    
 if __name__ == "__main__":
     app.run(debug=True)
     

@@ -1,23 +1,29 @@
+.open sql.db;
+
 CREATE TABLE IF NOT EXISTS organization (
-    id INT IDENTITY(1,1) PRIMARY KEY,
+    id INTEGER PRIMARY KEY,
     name VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS contact (
-    id INT IDENTITY(1,1) PRIMARY KEY,
+    id INTEGER PRIMARY KEY,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     dob VARCHAR(255) NOT NULL,
-    organization_id INT NOT NULL,
-    FOREIGN KEY (organization_id) REFERENCES organization(id)
+    organization_id INTEGER NOT NULL,
+    FOREIGN KEY (organization_id) 
+        REFERENCES organization(id)
+        ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS contact_info (
-    id INT IDENTITY(1,1) PRIMARY KEY,
-    cat INT NOT NULL,
+    id INTEGER PRIMARY KEY,
+    cat INTEGER NOT NULL,
     label VARCHAR(255) NOT NULL,
     info VARCHAR(255) NOT NULL,
-    contact_id INT NOT NULL,
-    FOREIGN KEY (contact_id) REFERENCES contact(id)
+    contact_id INTEGER NOT NULL,
+    FOREIGN KEY (contact_id) 
+        REFERENCES contact(id)
+        ON DELETE CASCADE
 );
 

@@ -6,6 +6,24 @@
 </head>
 <body>
     <h1>List of Organizations</h1>
+    <h2> Name</h2>
+    {%for row in orgs%}
+    <form method="post"> 
+        <a href = " {{ row['name'] }} ">{{row["name"]}} </a>
+        <button name = "remove", value = "{{row['name']}}" >Remove</button> 
+    </form>
+    {%endfor%}
+    <br>
+    <form method = "post">
+        <input type = "text" name = "neworgname" value="{{ request.form.neworgname }}">
+        <input type = "submit" value = "Add New Organization">
+    </form><br>
+    {{warn}}
+    {%if show%}
+    <form method = "post">
+        <input name = "confirm" type = "submit" value = "Confirm">
+    </form>
+    {%endif%}
 </body>
 <!-- big words organization on top -->
 <!-- below a list of each organization with a button for deleting-->
