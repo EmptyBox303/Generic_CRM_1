@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang = "en">
+<head>
+    <meta charset = "utf-8">
+    <title> {{org_name}}</title>
+</head>
+<body>
+    <h1>
+        Contacts in {{org_name}}
+    </h1>
+    {%if contact|length != 0%}
+        <i>There are currently no contacts within {{org_name}} </i>
+    {endif}
+    <table>
+        <tr>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Date of Birth</th>
+        </tr>
+        {%for contact in contacts%}
+        <tr>
+            <th>{{contact['first_name']}}</th>
+            <th>{{contact['last_name']}}</th>
+            <th>{{contact['dob']}}</th>
+        </tr>
+        {%endfor%}
+    </table>
+    <form method = "post">
+        <input type = "hidden" name = "prototype" value = "true">
+        <label for = "fname">Enter First Name:</label>
+        <input type = "text" name = "fname" placeholder = "0 ~ 31 characters" value = "{{request.form.fname}}" required>
+        <br>
+        <label for = "lname">Enter Last Name:</label>
+        <input type = "text" name = "lname" placeholder = "0 ~ 31 characters" value = "{{request.form.lname}}" required>
+        <br>
+        <input type = "date" name = "dob" min = "1900-01-01" required>
+        <input type = "submit" name = "confirm" value = "Confirm">
+        <input type = "submit" name = "confirm" value = "Cancel">
+
+    </form>
+
+</body>
+    
+    
+</html>

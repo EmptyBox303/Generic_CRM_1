@@ -86,6 +86,8 @@ def contact_page(orgname):
     find_organization = (cur.execute(f"SELECT id FROM organization WHERE name = \"{orgname}\"")).fetchone()
     if (find_organization is None):
         return render_template("org_notfound.html",org_name = orgname)
+    org_id = find_organization["id"]
+    list_of_contacts = (cur.execute(f"SELECT * FROM contact WHERE organization_id = {org_id}")).fetchall()
     if (request.method == "POST"):
         pass
 
@@ -128,7 +130,7 @@ def contact_page(orgname):
 
 
 
-    return f"Hello World {find_organization["id"]}"
+    return render_template("contacts_in_org.html")
 
 @app.teardown_appcontext
 def close_connection(exception):

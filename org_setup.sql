@@ -7,8 +7,8 @@ CREATE TABLE IF NOT EXISTS organization (
 
 CREATE TABLE IF NOT EXISTS contact (
     id INTEGER PRIMARY KEY,
-    first_name VARCHAR(255) NOT NULL,
-    last_name VARCHAR(255) NOT NULL,
+    first_name VARCHAR(31) NOT NULL,
+    last_name VARCHAR(31) NOT NULL,
     dob CHAR(10) NOT NULL,
     organization_id INTEGER NOT NULL,
     FOREIGN KEY (organization_id) 
