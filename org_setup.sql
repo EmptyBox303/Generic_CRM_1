@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS contact (
     id INTEGER PRIMARY KEY,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
-    dob VARCHAR(255) NOT NULL,
+    dob CHAR(10) NOT NULL,
     organization_id INTEGER NOT NULL,
     FOREIGN KEY (organization_id) 
         REFERENCES organization(id)
@@ -26,4 +26,6 @@ CREATE TABLE IF NOT EXISTS contact_info (
         REFERENCES contact(id)
         ON DELETE CASCADE
 );
+
+
 
