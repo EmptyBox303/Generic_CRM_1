@@ -103,7 +103,8 @@ def contact_info_page(contact_id_str):
 
     #CASE invalid contact id
     find_contact = (cur.execute(f"SELECT * FROM contact WHERE id = {contact_id}")).fetchone()
-    if (find_contact is None): return "This is invalid contact page"
+    if (find_contact is None): 
+        return render_template("invalid_contact.html")
 
 
     return "Working normal"
