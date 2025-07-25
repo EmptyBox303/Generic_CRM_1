@@ -5,7 +5,7 @@ from flask import (
 from logging.config import dictConfig
 import sqlite3 as sql
 import re
-
+import typing
 
 app = Flask(__name__)
 app.config["SESSION_PERMANENT"] = False 
@@ -81,56 +81,106 @@ def org_page():
 
 @app.route("/<orgname>", methods = ['GET','POST'])
 def contact_page(orgname):
-    session.clear()
     db, cur = get_db()
     find_organization = (cur.execute(f"SELECT id FROM organization WHERE name = \"{orgname}\"")).fetchone()
     if (find_organization is None):
         return render_template("org_notfound.html",org_name = orgname)
+    
     org_id = find_organization["id"]
+    d,p,message = org_contacts_process(request,cur,db,org_id)
+    if (d != -1): request.form.delete = d
+    if (p != -1): request.form.prompt = p
+
     list_of_contacts = (cur.execute(f"SELECT * FROM contact WHERE organization_id = {org_id}")).fetchall()
-    if (request.method == "POST"):
-        pass
+
+    return render_template("contacts_in_org.html",org_name = orgname, contacts = list_of_contacts, disp_message = message)
 
     
-    """
-    post ADD contact
-        if any field is left blank:
-            Please fill out all three required fields using non-whitespace characters. 
-        length restrictions on first and last name
-            Please enter a name less than 255 characters in length. 
-        Special character restrictions
-            if fname or lname contains @#$%&*()_+=\|{}{}:;"?/><! or numbers: Please input a first/last name with no numbers or special characters. 
-        dob regular expression match:
-            if character count mismatch, non-numeric 0, 1, 3, 4, 6,7,8,9, non-slashes 2 and 5: Please input date of birth with mm/dd/yyyy format.
-        If not valid date:
-            Please input a valid date of birth. 
-        if triple match fname lname and dob:
-            deny add contact
-            message = "An identical contact already exists within {{orgname}}. Please input a different first name, last name, or date or birth"
+@app.route("/contact/<contact_id_str>",methods = ['GET','POST'])
+def contact_info_page(contact_id_str):
+    contact_id = int(contact_id_str)
+    db, cur = get_db()
 
-    post EDIT contact
-        popup window below with similar form, similar warnings(write an external function processing this)
-        Spawn with details filled in based on entry
-        a save, delete, and cancel button
-        when prompted SAVE:
-            if window contents are unchanged, message "No details were changed in this contact. Press cancel to exit the editting window.
-            Otherwise, save new info, message "Contact details have been altered." Kill window. 
-        when prompted delete:
-            trigger new window asking for confirmation, warning "all associated contact info will be deleted."
-            if confirmed:
-                kill all windows delete contact, confirmation message "Contact has been deleted."
-            otherwise: kill confirmation window. 
-        when prompted cancel:
-            kill editting window
+    #CASE invalid contact id
+    find_contact = (cur.execute(f"SELECT * FROM contact WHERE id = {contact_id}")).fetchone()
+    if (find_contact is None): return "This is invalid contact page"
 
-    post DELETE contact
-        spawn removal window
+
+    return "Working normal"
+
+
+
+def org_contacts_process(request,cur,db,org_id) -> tuple[int | None, int | None, str]:
+    #CASE: GET method
+    if (request.method == "GET"):
+        return request_default_response()
+    
+    assert request.method == "POST"
+    #CASE: trigger edit prompt
+    if request.form.get("Edit") is not None:
+        return post_request_edit_contact(request,cur)
+
+    #CASE: execute deletion
+    elif(request.form.get("delete") is not None):
+        return post_request_delete_contact(request,cur,db)
         
-    """
+    assert request.form.get("prompt") is not None
 
+    contact_id = int(request.form.get("prompt"))
 
+    #CASE: cancel prompt
+    if request.form.get("confirm") == "Cancel":
+        return request_default_response()
+    
+    #CASE: trigger deletion prompt
+    if request.form.get("confirm") == "Delete":
+        return request_default_response(delete = contact_id,message=\
+                                     "Are you sure you want to delete this contact? All associated contact info will be deleted as well.")
+    
 
-    return render_template("contacts_in_org.html")
+    fname = request.form.get("fname").rstrip()
+    lname = request.form.get("lname").rstrip()
+    dob = request.form.get("dob")
+    
+    #CASE: invalid input
+    valid, message = are_inputs_valid(fname.lower(),lname.lower(),dob)
+    if (not valid): 
+        return request_default_response(None,-1,message)
+    
+    exact_matches = cur.execute(f"SELECT * FROM contact \
+                WHERE organization_id = {org_id}\
+                AND LOWER(first_name) = \"{fname.lower()}\"\
+                AND LOWER(last_name) = \"{lname.lower()}\"\
+                AND dob = \"{dob}\"\
+                AND id != {contact_id}").fetchall()
+    
+    if (contact_id == 0):
+        #CASE: adding contact
+        if (len(exact_matches) != 0):
+            return request_default_response(None,-1,\
+                                            "There already exists a contact with identical first and last name and dob within this organization.")
+        else:
+            cur.execute(f"INSERT INTO contact(first_name,last_name,dob,organization_id) VALUES\
+                        (\"{fname}\",\"{lname}\",\"{dob}\",{org_id})")
+            db.commit()
+            return request_default_response(message="You have successfully added a contact.")
+    
+    else:
+        if (len(exact_matches) != 0):
+            return request_default_response(-1,None,\
+                                            "Please enter new contact information that does not overlap with exiting contacts.")
+        else:
+            
+            cur.execute(f"UPDATE contact\
+                        SET first_name = '{fname}',\
+                            last_name = '{lname}',\
+                            dob = '{dob}', \
+                            organization_id = {org_id} \
+                        WHERE id = {contact_id}")
+            db.commit()
+            return request_default_response(message="You have successfully edited and saved your changes to a contact.")
+
+    
 
 @app.teardown_appcontext
 def close_connection(exception):
@@ -146,19 +196,44 @@ def get_db():
         cur = db.cursor()
     return db, cur
 
+def are_inputs_valid(fname : str, lname : str, dob : str) -> tuple[bool,str]:
+    valid = True
+    message = ""
+    if (len(fname) == 0 or len(lname) == 0):
+        valid = False
+        message = "Please enter non-whitespace names for both your first and last name entry."
+    elif (len(fname) > 31 or len(lname) > 31):
+        valid = False
+        message = "Please enter first and last names under 31 characters."
+    elif (len(dob) == 0):
+        valid = False
+        message = "Please enter a Date of Birth."
+    return (valid,message)
+    #function should return a true false for validity, then a relevant message
 
-def is_valid_dob(s : str) -> bool:
-    if (len(s) != 10): return False
-    if (dob_pattern.search(s) is None): return False
-    month = int(s[0:2])
-    day = int(s[3:5])
-    year = int(s[6:])
-    if (day == 0): return False
-    if (month != 2): return (day <= days_in_month[month-1])
-    feb_day_lim = 29 if (year % 400 == 0 or (year % 4 == 0 and year % 25 != 0)) else 28
-    #is leap year if is divisible by 400 OR divisible by 4 but not 25
-    return (day <= feb_day_lim)
+
+
+def post_request_edit_contact(request,cur):
+    contact_id = int(request.form.get("Edit"))
+    if (contact_id != 0):
+        find_contact = (cur.execute(f"SELECT * FROM contact WHERE id = {contact_id}").fetchone())
+        request.form.fname = find_contact["first_name"]
+        request.form.lname = find_contact["last_name"]
+        request.form.dob = find_contact["dob"]
+    request.form.prompt = contact_id
+    #returns for delete, prompt, and message
+    return (None,contact_id,"")
     
+def post_request_delete_contact(request,cur,db):
+    deletion_id = int(request.form.get("delete"))
+    cur.execute(f"DELETE FROM contact WHERE id = {deletion_id}")
+    db.commit()
+    return (None,None, "You have successfully deleted contact.")
+
+
+def request_default_response(delete = None,prompt = None,message : str = ""):
+    return (delete,prompt,message)
+
 if __name__ == "__main__":
     app.run(debug=True)
     
