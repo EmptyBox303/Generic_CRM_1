@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang = "en">
+<head>
+    <meta charset = "utf-8">
+    <title> {{org_name}}</title>
+</head>
+<body>
+    <h1>
+        Contacts in {{org_name}}
+    </h1>
+    {%if contacts|length == 0%}
+        <i>There are currently no contacts within {{org_name}} </i>
+    {%endif%}
+    <table>
+        {%if contacts|length != 0%}
+        <tr>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Date of Birth</th>
+            <th>Info</th>
+            <th></th>
+        </tr>
+        {%endif%}
+        {%for contact in contacts%}
+        <tr>
+            <td>{{contact['first_name']}}</td>
+            <td>{{contact['last_name']}}</td>
+            <td>{{contact['dob']}}</td>
+            <td><a href = "contact/{{contact['id']}}">See Info</a></td>
+            <td> 
+                <form method = "post">
+                    <button name = "Edit" value = {{contact['id']}}>Edit</button>
+                </form>
+            </td>
+        </tr>
+        {%endfor%}
+    </table>
+    <br>
+    <form method = "post">
+        <button name = "Edit" value = 0>Add New Contact</button>
+    </form>
+    <br>
+    {% if request.form.prompt is not none %}
+    <form method = "post">
+        <h2>
+            {%if request.form.prompt|int != 0%}
+                Editing Contact
+            {%else%}
+                Adding Contact
+            {%endif%}
+        </h2>
+        <input type = "hidden" name = "prompt" value = {{request.form.prompt}}>
+        <label for = "fname">Enter First Name:</label>
+        <input type = "text" name = "fname" placeholder = "0 ~ 31 characters" value = "{{request.form.fname}}">
+        <br>
+        <label for = "lname">Enter Last Name:</label>
+        <input type = "text" name = "lname" placeholder = "0 ~ 31 characters" value = "{{request.form.lname}}">
+        <br>
+        <input type = "date" name = "dob" min = "1900-01-01" value = "{{request.form.dob}}">
+        <br>
+        <input type = "submit" name = "confirm" value = "Confirm">
+        {%if request.form.prompt|int != 0%}
+            <input type = "submit" name = "confirm" value = "Delete">
+        {%endif%}
+        <input type = "submit" name = "confirm" value = "Cancel">
+
+    </form>
+    {%endif%}
+    {{disp_message}}
+    {%if request.form.delete is not none%}
+    <form method = "post">
+        <input type = "hidden" name = "delete" value = {{request.form.delete}}>
+        <input type = "submit" name = "confirm" value = "Confirm">
+        <input type = "submit" name = "confirm" value = "Cancel">
+    </form>
+    {%endif%}
+    
+
+</body>
+    
+    
+</html>
