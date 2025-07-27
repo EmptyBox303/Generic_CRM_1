@@ -2,62 +2,64 @@
 <html lang = "en">
 <head>
     <meta charset = "utf-8">
-    <title> {{org_name}}</title>
+    <title> {{contact['first_name']}} {{contact['last_name']}}</title>
+    <base href = "http://127.0.0.1:5000">
 </head>
 <body>
-    <h1>
-        Contacts in {{org_name}}
-    </h1>
-    {%if contacts|length == 0%}
-        <i>There are currently no contacts within {{org_name}} </i>
+    <h1>{{contact['first_name']}} {{contact['last_name']}}</h1>
+    <h3>Born {{contact['dob']}}<br>
+    Member of <a href = "{{orgname}}">{{orgname}}</a><br></h3>
+    
+    {%if info|length == 0%}
+    <i>There is no information related to this contact.</i><br>
+    {%else%}
+        <table>
+            <tr>
+                <th>Label</th>
+                <th>Info</th>
+                <th></th>
+            </tr>
+            {%for i in info%}
+            <tr>
+                <td>{{i['label']}}</td>
+                <td>{{i['info']}}</td>
+                <td>
+                    <form method = "post">
+                        <button name = "change" value = {{i['id']}}>Edit</button>
+                    </form>
+                </td>
+            </tr>
+            {%endfor%}
+            
+        </table>
+        
     {%endif%}
-    <table>
-        {%if contacts|length != 0%}
-        <tr>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>Date of Birth</th>
-            <th>Info</th>
-            <th></th>
-        </tr>
-        {%endif%}
-        {%for contact in contacts%}
-        <tr>
-            <td>{{contact['first_name']}}</td>
-            <td>{{contact['last_name']}}</td>
-            <td>{{contact['dob']}}</td>
-            <td><a href = "contact/{{contact['id']}}">See Info</a></td>
-            <td> 
-                <form method = "post">
-                    <button name = "Edit" value = {{contact['id']}}>Edit</button>
-                </form>
-            </td>
-        </tr>
-        {%endfor%}
-    </table>
+
     <br>
     <form method = "post">
-        <button name = "Edit" value = 0>Add New Contact</button>
+        <button name = "change" value = 0>Add New Info</button>
     </form>
     <br>
-    {% if request.form.prompt is not none %}
+
+    {%if request.form.prompt is not none%}
     <form method = "post">
-        <h2>
-            {%if request.form.prompt|int != 0%}
-                Editing Contact
-            {%else%}
-                Adding Contact
-            {%endif%}
-        </h2>
         <input type = "hidden" name = "prompt" value = {{request.form.prompt}}>
-        <label for = "fname">Enter First Name:</label>
-        <input type = "text" name = "fname" placeholder = "0 ~ 31 characters" value = "{{request.form.fname}}">
+        <h3>
+        {%if request.form.prompt|int == 0%}
+            Add Info
+        {%else%}
+            Edit Info
+        {%endif%}
+        </h3>
+        <label for = "cat">Enter Numeric Category:</label>
+        <input type = "text" name = "cat" placeholder = "Enter number" value = {{request.form.cat}}>
         <br>
-        <label for = "lname">Enter Last Name:</label>
-        <input type = "text" name = "lname" placeholder = "0 ~ 31 characters" value = "{{request.form.lname}}">
+        <label for = "label">Enter Label</label>
+        <input type = "text" name = "label" placeholder = "Enter label" value = {{request.form.label}}>
         <br>
-        <input type = "date" name = "dob" min = "1900-01-01" value = "{{request.form.dob}}">
-        <br>
+        <label for = "info">Enter Info:</label>
+        <input type = "text" name = "info" placeholder = "Enter info" value = {{request.form.info}}>
+        <br><br>
         <input type = "submit" name = "confirm" value = "Confirm">
         {%if request.form.prompt|int != 0%}
             <input type = "submit" name = "confirm" value = "Delete">
@@ -66,7 +68,7 @@
 
     </form>
     {%endif%}
-    {{disp_message}}
+    {{message}} 
     {%if request.form.delete is not none%}
     <form method = "post">
         <input type = "hidden" name = "delete" value = {{request.form.delete}}>

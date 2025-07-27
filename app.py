@@ -102,16 +102,105 @@ def contact_info_page(contact_id_str):
     db, cur = get_db()
 
     #CASE invalid contact id
-    find_contact = (cur.execute(f"SELECT * FROM contact WHERE id = {contact_id}")).fetchone()
-    if (find_contact is None): 
+    contact = (cur.execute(f"SELECT * FROM contact WHERE id = {contact_id}")).fetchone()
+    if (contact is None): 
         return render_template("invalid_contact.html")
 
+    
+    orgname = (cur.execute(f"SELECT name FROM organization WHERE id = \
+                           (SELECT organization_id FROM contact WHERE id = {contact_id})")).fetchone()
+ 
+    """
+    cat INTEGER NOT NULL, -> category
+    label VARCHAR(255) NOT NULL, -> label
+    info VARCHAR(255) NOT NULL, -> information
+    contact_id INTEGER NOT NULL, -> foreign key
+    FOREIGN KEY (contact_id) 
+        REFERENCES contact(id)
 
-    return "Working normal"
+                """
+
+    p,d, message = info_page_request_process(request,db,cur,contact_id)
+    if (p != -1): request.form.prompt = p
+    if (d != -1): request.form.delete = d
+    info = (cur.execute(f"SELECT * FROM contact_info WHERE contact_id = {contact_id} ORDER BY cat ASC")).fetchall()
+    return render_template("info_in_contact.html",contact = contact,info = info,orgname = orgname['name'],message = message)
+
+def info_page_request_process(request,db,cur,contact_id) -> tuple[int|None,int|None,str]:
+    #prompt first, delete second, message third
+    if (request.method == "GET"): return (None,None,"")
+    assert request.method == "POST"
+
+    if (request.form.get("confirm") == "Cancel"): return (None,None,"")
+
+    
+    if (request.form.get("change") is not None):
+        change_id = int(request.form.get("change"))
+        if (change_id != 0):
+            contact_info_defaults = cur.execute(f"SELECT * FROM contact_info WHERE id = {change_id}").fetchone()
+            request.form.cat = contact_info_defaults['cat']
+            request.form.label = contact_info_defaults['label']
+            request.form.info = contact_info_defaults['info']
+
+        return (request.form.get("change"),None,"")
+    
+
+    if (request.form.get("delete") is not None):
+        delete_info_id = int(request.form.get("delete"))
+        cur.execute(f"DELETE FROM contact_info WHERE id = {delete_info_id}")
+        db.commit()
+        return (None,None,"You have successfully deleted contact info.")
+    
+    assert (request.form.get("prompt") is not None)
+    if (request.form.get("confirm") == "Delete"): return (None, request.form.get("prompt"), "Do you wish to delete this contact info?")
+    
+    change_id = int(request.form.get("prompt"))
+    try:
+        cat = int(request.form.get("cat").rstrip())
+    except TypeError:
+        return(-1,None,"Please enter a number into category.")
+    except ValueError:
+        return (-1,None,"Please enter a valid integer into category.")
+    
+    if (cat < 0):
+        return (-1,None,"Negative category numbers are invalid.")
+    label = request.form.get("label").rstrip()
+    info = request.form.get("info").rstrip()
+
+    if (len(label) == 0 or len(info) == 0):
+        return (-1,None,"Please enter non-whitespace contents for both info and label sections.")
+    if (len(label) >= 255 or len(info) >= 255):
+        return (-1,None,"Please enter contents shorter than 255 characters for both info and label sections.")
+    
+    info_match = (cur.execute(f"SELECT * FROM contact_info \
+                              WHERE label = '{label}' \
+                                AND info = '{info}' \
+                                AND contact_id = {contact_id}\
+                                AND id != {change_id}")).fetchall()
+    
+    if (len(info_match) != 0):
+        return (-1,None,"The info you are trying to enter already exists within this contact profile. Please try again.")
+
+    if (change_id == 0):
+        cur.execute(f"INSERT INTO contact_info(cat,label,info,contact_id) \
+                    VALUES({cat},'{label}','{info}',{contact_id})")
+        db.commit()
+        return (None,None,"New contact has been added.")
+
+
+    cur.execute(f"UPDATE contact_info \
+                SET cat = {cat}, \
+                label = '{label}', \
+                info = 'info'\
+                WHERE id = {change_id}")
+    db.commit()
+    return(None,None,"You have successfully updated and saved a contact.")
+
 
 
 
 def org_contacts_process(request,cur,db,org_id) -> tuple[int | None, int | None, str]:
+
     #CASE: GET method
     if (request.method == "GET"):
         return request_default_response()
@@ -227,6 +316,8 @@ def post_request_edit_contact(request,cur):
     
 def post_request_delete_contact(request,cur,db):
     deletion_id = int(request.form.get("delete"))
+    if (request.form.get("confirm") == "Cancel"):
+        return (None,None, "")
     cur.execute(f"DELETE FROM contact WHERE id = {deletion_id}")
     db.commit()
     return (None,None, "You have successfully deleted contact.")
