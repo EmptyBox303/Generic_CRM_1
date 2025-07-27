@@ -3,11 +3,14 @@
 <head>
     <meta charset = "utf-8">
     <title> {{org_name}}</title>
+    <base href = "http://127.0.0.1:5000">
 </head>
 <body>
     <h1>
         Contacts in {{org_name}}
+        
     </h1>
+    <a href = "/">Back to Home Page</a><br>
     {%if contacts|length == 0%}
         <i>There are currently no contacts within {{org_name}} </i>
     {%endif%}
@@ -49,7 +52,7 @@
                 Adding Contact
             {%endif%}
         </h2>
-        <input type = "hidden" name = "prompt" value = {{request.form.prompt}}>
+        <input type = "hidden" name = "prompt" value = "{{request.form.prompt}}">
         <label for = "fname">Enter First Name:</label>
         <input type = "text" name = "fname" placeholder = "0 ~ 31 characters" value = "{{request.form.fname}}">
         <br>
