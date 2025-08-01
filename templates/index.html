@@ -10,7 +10,7 @@
     <h2> List of Organizations </h2>
     {%for row in orgs%}
     <form method="post"> 
-        <a href = "{{ row['name'] }}">{{row["name"]}} </a>
+        <a href = "org/{{ row['name'] }}">{{row["name"]}} </a>
         <button name = "remove", value = "{{row['name']}}" >Remove</button> 
     </form>
     {%endfor%}
